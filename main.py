@@ -28,16 +28,25 @@ async def stop_bot(bot: Bot):
 
 
 async def hello_msg(message: Message):
-    user_data = {
-        'user_id': message.from_user.id,
-        'telegram_user_id': message.from_user.id,
-        'username': message.from_user.username,
-        'is_manager': False,
-        'manager_id': manager_id
-    }
-    UserService.create_new_user(user_data)
+    if UserService.is_user_manager(message.from_user.id):
+        await message.answer(text=f"Привет {message.from_user.first_name}. Рад видеть тебя на смене."
+                                  f"Ниже ты можешь выбрать действия для менеджера.")
+        await handler.send_menu(message)
+    else:
+        user_data = {
+            'user_id': message.from_user.id,
+            'telegram_user_id': message.from_user.id,
+            'username': message.from_user.username,
+            'is_manager': False,
+            'manager_id': 2
+        }
+        UserService.create_new_user(user_data)
 
-    await message.answer(text="Выберите действие ⬇️⬇️⬇️", reply_markup=start_keyboard)
+        await message.answer(text="Выберите действие ⬇️⬇️⬇️", reply_markup=start_keyboard)
+
+
+async def notify_unfinished_tasks_wrapper(bot):
+    await notify_unfinished_tasks(bot)
 
 
 async def start():
@@ -53,8 +62,8 @@ async def start():
     dp.startup.register(start_bot)
     dp.shutdown.register(stop_bot)
     scheduler = AsyncIOScheduler()
+    scheduler.add_job(notify_unfinished_tasks, args=[bot], trigger='interval', minutes=60)
     scheduler.start()
-    scheduler.add_job(lambda: notify_unfinished_tasks(bot), 'interval', hours=1)
     try:
         await dp.start_polling(bot)
     finally:

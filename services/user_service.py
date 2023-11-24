@@ -5,6 +5,7 @@ from models.user import User
 class UserService:
     @staticmethod
     def create_new_user(user_data):
+        telegram_user_id = user_data['telegram_user_id']
         conn = connect()
         cursor = conn.cursor()
         new_user = User(
@@ -27,3 +28,16 @@ class UserService:
             print(f"Ошибка при работе с базой данных: {e}")
         finally:
             close(conn)
+
+    @staticmethod
+    def is_user_manager(telegram_user_id):
+        conn = connect()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM managers WHERE telegramuserid = %s", (telegram_user_id,))
+        manager = cursor.fetchone()
+
+        cursor.close()
+        conn.close()
+
+        return manager is not None

@@ -65,22 +65,21 @@ async def log_end_task(telegram_user_id: int, state: str):
         close(conn)
 
 
-
 async def notify_unfinished_tasks(bot: Bot):
     conn = connect()
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            SELECT u.telegramuserid, us.state
+            SELECT u.telegramuserid, u.username, us.state
             FROM user_states us
             JOIN users u ON us.userid = u.userid
-            WHERE us.end_time IS NULL AND u.ismanager = False
+            WHERE us.end_time IS NULL
         """)
         unfinished_tasks = cursor.fetchall()
 
-        for telegram_id, state in unfinished_tasks:
+        for telegram_id, username, state in unfinished_tasks:
             manager_telegram_id = manager_id
-            message = f"Пользователь с ID {telegram_id} не завершил задачу: {state}"
+            message = f"Пользователь @{username} с ID {telegram_id} не завершил задачу: {state}"
             await bot.send_message(manager_telegram_id, message)
     except Exception as e:
         print(f"Ошибка при проверке незавершенных задач: {e}")
